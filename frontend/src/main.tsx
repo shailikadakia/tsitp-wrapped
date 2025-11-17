@@ -1,7 +1,15 @@
+import { createRoot } from "react-dom/client";
+import App from "./App.tsx";
+import "./index.css";
+import { SpotifyCallbackPage } from "./components/spotify-callback-page";
 
-  import { createRoot } from "react-dom/client";
-  import App from "./App.tsx";
-  import "./index.css";
+const Root = () => {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (pathname === "/callback") {
+    return <SpotifyCallbackPage />;
+  }
 
-  createRoot(document.getElementById("root")!).render(<App />);
-  
+  return <App />;
+};
+
+createRoot(document.getElementById("root")!).render(<Root />);
