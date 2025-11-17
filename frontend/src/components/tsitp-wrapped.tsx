@@ -86,18 +86,22 @@ const characterPlaylists: CharacterPlaylist[] = [
 
 interface TSITPWrappedProps {
   onBack: () => void;
+  userData?: Track[] | null;
 }
 
-export function TSITPWrapped({ onBack }: TSITPWrappedProps) {
+export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [userStats, setUserStats] = useState<any>(null);
 
   useEffect(() => {
+    // Use real data if available, otherwise use mock data
+    const tracksToAnalyze = userData && userData.length > 0 ? userData : mockUserTracks;
+    
     // Calculate user stats
-    const totalPlays = mockUserTracks.reduce((sum, track) => sum + track.plays, 0);
-    const avgEnergy = mockUserTracks.reduce((sum, track) => sum + track.energy, 0) / mockUserTracks.length;
-    const avgValence = mockUserTracks.reduce((sum, track) => sum + track.valence, 0) / mockUserTracks.length;
-    const topTrack = mockUserTracks.sort((a, b) => b.plays - a.plays)[0];
+    const totalPlays = tracksToAnalyze.reduce((sum, track) => sum + track.plays, 0);
+    const avgEnergy = tracksToAnalyze.reduce((sum, track) => sum + track.energy, 0) / tracksToAnalyze.length;
+    const avgValence = tracksToAnalyze.reduce((sum, track) => sum + track.valence, 0) / tracksToAnalyze.length;
+    const topTrack = [...tracksToAnalyze].sort((a, b) => b.plays - a.plays)[0];
     
     // Character matching
     const characterScores = characterPlaylists.map(character => {
@@ -123,7 +127,7 @@ export function TSITPWrapped({ onBack }: TSITPWrappedProps) {
       teamJeremiahScore: teamJeremiahScore * 100,
       summerMood: avgValence > 0.5 ? "Sunny" : avgValence > 0.3 ? "Bittersweet" : "Moody"
     });
-  }, []);
+  }, [userData]);
 
   const slides = [
     // Welcome
