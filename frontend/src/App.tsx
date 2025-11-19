@@ -9,7 +9,7 @@ import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { SpotifyAuth } from './components/spotify-auth';
 import { SpotifyCallback } from './components/spotify-callback';
 import { LoadingScreen } from './components/loading-screen';
-import { isAuthenticated, getSummerData, logout } from './lib/spotify-api';
+import { isAuthenticated, getSummerData, getUserProfile,  logout } from './lib/spotify-api';
 
 type AppState = 'landing' | 'auth' | 'callback' | 'loading' | 'wrapped';
 
@@ -38,9 +38,11 @@ export default function App() {
         // Fetch real Spotify data
         setAppState('loading');
         try {
-          const tracks = await getSummerData();
-          setUserData(tracks);
+         // const tracks = await getSummerData();
+         // setUserData(tracks);
           setAppState('wrapped');
+          const user = await getUserProfile();
+          console.log(user)
         } catch (error) {
           console.error('Error fetching Spotify data:', error);
           alert('Failed to fetch your Spotify data. Please try again or use demo mode.');
