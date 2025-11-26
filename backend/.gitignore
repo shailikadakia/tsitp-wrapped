@@ -3,6 +3,8 @@
 /.pnp
 .pnp.js
 .env
+.env.local
+/src/generated/prisma
 
 # testing
 /coverage
@@ -22,3 +24,6 @@ yarn-error.log*
 .idea/ # for Jetbrains IDEs
 .vscode/ # for VS Code settings
 *.log
+/src/generated/prisma
+
+/generated/prisma
