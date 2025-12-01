@@ -1,21 +1,21 @@
+// routes/testAudioFeatures.ts
 import express from "express";
 const router = express.Router();
 import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
 import { getTrackAudioFeaturesreccoResponse }from "../services/reccoBeatsService"
 import { getOrFetchAudioFeaturesForTrack} from "../services/audioFeaturesService"
+import { getTracksByPlaylist } from "../services/spotifyService";
 
-const playlistRouter = router.get("/get-audio-features", async (req, res) => {
-  const spotifyTrackId = req.query.spotifyTrackId as string | undefined;
-  if (!spotifyTrackId) {
+const trackRouter  = router.get("/get-tracks", async (req, res) => {
+  const playlistId = req.query.playlistId as string | undefined;
+  if (!playlistId) {
     return res
       .status(400)
       .json({ error: "Missing query param: spotifyTrackId" });
   }
   try {
-    const recco = await getTrackAudioFeaturesreccoResponse(spotifyTrackId)
-    const response = await getOrFetchAudioFeaturesForTrack(recco, spotifyTrackId)
-    return res.json({response});
+    const tracks = await getTracksByPlaylist(playlistId)
+    return res.json({tracks});
   } catch (err: any) {
     console.error("Inserting a track into the DB error", err);
     return res.status(500).json({
@@ -26,4 +26,4 @@ const playlistRouter = router.get("/get-audio-features", async (req, res) => {
   }
 });
 
-export default playlistRouter;
+export default trackRouter;
