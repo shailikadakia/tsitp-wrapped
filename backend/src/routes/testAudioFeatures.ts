@@ -1,18 +1,19 @@
 // routes/testAudioFeatures.ts
 import express from "express";
-
 const router = express.Router();
-
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+import { ReccoBeatsAudioFeatures } from "./types/reccoBeats";
 /**
- * GET /api/test/audio-features?spotifyTrackId=00vJzaoxM3Eja1doBUhX0P
+ * GET /api/audio-features?spotifyTrackId=00vJzaoxM3Eja1doBUhX0P
  *
- * 1. Fetch track from Spotify (sanity + we get canonical ID).
- * 2. Use that Spotify ID to query ReccoBeats /track?ids=...
- * 3. Grab the ReccoBeats internal id from the response.
- * 4. Call /track/{reccobeats_id}/audio-features.
- * 5. Return combined payload.
+ * 1. (Optional) Fetch track metadata from Spotify (to store name/artist).
+ * 2. Upsert Track in DB.
+ * 3. Use Spotify ID to query ReccoBeats /audio-features.
+ * 4. Upsert AudioFeatures in DB.
+ * 5. Return { track, audioFeatures }.
  */
-router.get("/api/test/audio-features", async (req, res) => {
+router.get("/api/get-audio-features", async (req, res) => {
   const spotifyTrackId = req.query.spotifyTrackId as string | undefined;
 
   if (!spotifyTrackId) {
@@ -20,21 +21,85 @@ router.get("/api/test/audio-features", async (req, res) => {
       .status(400)
       .json({ error: "Missing query param: spotifyTrackId" });
   }
-  console.log(spotifyTrackId)
+
+  console.log("Fetching audio features for:", spotifyTrackId);
 
   try {
-    // 1) Get Spotify track (optional sanity check)
+    let track = await prisma.track.findUnique({
+      where: { spotifyTrackId },
+    });
 
-    // 2) Ask ReccoBeats for this track using Spotify ID
-    const reccoResponse = await fetch(`https://api.reccobeats.com/v1/audio-features?ids=${spotifyTrackId}`)
-    const data = await reccoResponse.json()
-    console.log(data)
-    return res.json(data)
+    if (!track) {
+      track = await prisma.track.create({
+        data: {
+          spotifyTrackId,
+          name: null,
+          artist: null,
+        },
+      });
+    }
 
+    const reccoResponse = await fetch(
+      `https://api.reccobeats.com/v1/audio-features?ids=${spotifyTrackId}`
+    );
+
+    if (!reccoResponse.ok) {
+      const body = await reccoResponse.text();
+      console.error("ReccoBeats error:", reccoResponse.status, body);
+      return res.status(502).json({
+        error: "ReccoBeats audio-features call failed",
+        status: reccoResponse.status,
+        body,
+      });
+    }
+
+    const raw = await reccoResponse.json()
+    const data = raw as ReccoBeatsAudioFeatures
+    const af = data?.content?.[0];
+    if (!af) {
+      return res.status(404).json({
+        error: "No audio features returned for this track",
+        raw: data,
+      });
+    }
+  
+    const audioFeatures = await prisma.audioFeatures.upsert({
+      where: { trackId: track.id },
+      update: {
+        danceability: af.danceability ?? null,
+        energy: af.energy ?? null,
+        valence: af.valence ?? null,
+        tempo: af.tempo ?? null,
+        acousticness: af.acousticness ?? null,
+        instrumentalness: af.instrumentalness ?? null,
+        loudness: af.loudness ?? null,
+        liveness: af.liveness ?? null,
+        speechiness: af.speechiness ?? null,
+      },
+      create: {
+        trackId: track.id,
+        danceability: af.danceability ?? null,
+        energy: af.energy ?? null,
+        valence: af.valence ?? null,
+        tempo: af.tempo ?? null,
+        acousticness: af.acousticness ?? null,
+        instrumentalness: af.instrumentalness ?? null,
+        loudness: af.loudness ?? null,
+        liveness: af.liveness ?? null,
+        speechiness: af.speechiness ?? null,
+      },
+    });
+    
+
+    return res.json({
+      track,
+      audioFeatures,
+      data
+    });
   } catch (err: any) {
     console.error("Test audio-features error:", err);
     return res.status(500).json({
-      error: "Failed to fetch audio features",
+      error: "Failed to fetch/store audio features",
       message: err?.message ?? "Unknown error",
     });
   }
