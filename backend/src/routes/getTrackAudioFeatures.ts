@@ -3,16 +3,8 @@ import express from "express";
 const router = express.Router();
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
-import { ReccoBeatsAudioFeatures } from "./types/reccoBeats";
-/**
- * GET /api/audio-features?spotifyTrackId=00vJzaoxM3Eja1doBUhX0P
- *
- * 1. (Optional) Fetch track metadata from Spotify (to store name/artist).
- * 2. Upsert Track in DB.
- * 3. Use Spotify ID to query ReccoBeats /audio-features.
- * 4. Upsert AudioFeatures in DB.
- * 5. Return { track, audioFeatures }.
- */
+import { getTrackAudioFeaturesreccoResponse }from "../services/reccoBeatsService"
+
 router.get("/api/get-audio-features", async (req, res) => {
   const spotifyTrackId = req.query.spotifyTrackId as string | undefined;
 
@@ -39,22 +31,7 @@ router.get("/api/get-audio-features", async (req, res) => {
       });
     }
 
-    const reccoResponse = await fetch(
-      `https://api.reccobeats.com/v1/audio-features?ids=${spotifyTrackId}`
-    );
-
-    if (!reccoResponse.ok) {
-      const body = await reccoResponse.text();
-      console.error("ReccoBeats error:", reccoResponse.status, body);
-      return res.status(502).json({
-        error: "ReccoBeats audio-features call failed",
-        status: reccoResponse.status,
-        body,
-      });
-    }
-
-    const raw = await reccoResponse.json()
-    const data = raw as ReccoBeatsAudioFeatures
+    const data = await getTrackAudioFeaturesreccoResponse(spotifyTrackId)
     const af = data?.content?.[0];
     if (!af) {
       return res.status(404).json({
