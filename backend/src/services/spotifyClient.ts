@@ -1,3 +1,4 @@
+
 import 'dotenv/config';
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
@@ -12,7 +13,6 @@ let cachedToken: {
   expiresAt: number;
 } | null = null;
 
-// Get an app token using Client Credentials flow, with simple in-memory caching
 export async function getAppAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) {
     return cachedToken.accessToken;
@@ -48,7 +48,7 @@ export async function getAppAccessToken(): Promise<string> {
 
   return data.access_token;
 }
-
+/*
 // Fetch *all* tracks from a playlist (handles pagination)
 async function getAllPlaylistTrackIds(playlistId: string, accessToken: string): Promise<string[]> {
   const ids: string[] = [];
@@ -173,3 +173,5 @@ export async function getPlaylistFeatureAverages(playlistId: string): Promise<Pl
     },
   };
 }
+
+*/
