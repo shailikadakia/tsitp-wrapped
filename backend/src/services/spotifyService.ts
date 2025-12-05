@@ -38,3 +38,34 @@ export async function getTracksByPlaylist(
     throw err;
   }
 }
+
+
+export async function getTrackNameAuthor(
+  trackId: string
+): Promise<SpotifyTrack> {
+  try {
+    const accessToken = await getAppAccessToken();
+    const response = await fetch(
+      `https://api.spotify.com/v1/tracks/${trackId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Spotify error ${response.status}`);
+    }
+
+    const json = await response.json();
+    const track = json as any;
+    return {
+      spotifyTrackId: track.id,
+      name: track.name,
+      artist: [track.artists[0].name ?? null] 
+    }
+  } catch (err) {
+    console.error("Error fetching track info from spotify:", err);
+    throw err;
+  }
+}

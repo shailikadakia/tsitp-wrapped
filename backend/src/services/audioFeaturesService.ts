@@ -3,10 +3,11 @@ import { PrismaClient } from "@prisma/client";
 import { getTrackAudioFeaturesreccoResponse } from "./reccoBeatsService";
 import { ReccoBeatsAudioFeatures } from "../types/reccoBeats";
 import { AnyARecord } from "dns";
+import { SpotifyPlaylist, SpotifyTrack } from "../types/spotify";
 
 const prisma = new PrismaClient();
 
-export async function getOrFetchAudioFeaturesForTrack(recco: ReccoBeatsAudioFeatures, spotifyTrackId: string) {
+export async function getOrFetchAudioFeaturesForTrack(recco: ReccoBeatsAudioFeatures, spotifyTrackId: string, trackInfo: SpotifyTrack) {
   try {
     const data = recco?.content?.[0];
         if (!data) throw new Error("Missing content[0] from ReccoBeats");
@@ -18,8 +19,8 @@ export async function getOrFetchAudioFeaturesForTrack(recco: ReccoBeatsAudioFeat
           track = await prisma.track.create({
             data: {
               spotifyTrackId,
-              name: null,
-              artist: null,
+              name: trackInfo.name,
+              artist: trackInfo.artist,
             },
           });
         }

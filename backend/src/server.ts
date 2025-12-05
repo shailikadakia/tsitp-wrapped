@@ -1,12 +1,11 @@
 import express from "express";
-import trackRouter from "./routes/getTrackAudioFeatures";
 import playlistRouter from "./routes/getPlaylistTracks";
-
+import trackRouter from "./routes/getTrackAudioFeatures";
 const app = express();
 
 app.use(express.json());
-app.use('/api/track', trackRouter);
 app.use('/api/playlist', playlistRouter);
+app.use('/api/track', trackRouter);
 
 
 

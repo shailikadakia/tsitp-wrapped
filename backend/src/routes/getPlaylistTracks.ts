@@ -1,12 +1,12 @@
 // routes/testAudioFeatures.ts
 import express from "express";
-const router = express.Router();
+const playlistRouter = express.Router();
 import { PrismaClient } from "@prisma/client";
 import { getTrackAudioFeaturesreccoResponse }from "../services/reccoBeatsService"
 import { getOrFetchAudioFeaturesForTrack} from "../services/audioFeaturesService"
 import { getTracksByPlaylist } from "../services/spotifyService";
 
-const trackRouter  = router.get("/get-tracks", async (req, res) => {
+playlistRouter.get("/get-tracks", async (req, res) => {
   const playlistId = req.query.playlistId as string | undefined;
   if (!playlistId) {
     return res
@@ -17,6 +17,32 @@ const trackRouter  = router.get("/get-tracks", async (req, res) => {
     const tracks = await getTracksByPlaylist(playlistId)
     return res.json({tracks});
   } catch (err: any) {
+    console.error("Inserting getting playlist info", err);
+    return res.status(500).json({
+      error: 
+      "Failed to fetch playlist tracks",
+      message: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+
+playlistRouter.get("/get-tracks-audio-features", async (req, res) => {
+  const playlistId = req.query.playlistId as string | undefined;
+  if (!playlistId) {
+    return res
+      .status(400)
+      .json({ error: "Missing query param: spotifyTrackId" });
+  }
+  try {
+    const playlist = await getTracksByPlaylist(playlistId)
+    for (const track of playlist.tracks) {
+      console.log(track.spotifyTrackId)
+      //const recco = await getTrackAudioFeaturesreccoResponse(track.spotifyTrackId)
+      //const response = await getOrFetchAudioFeaturesForTrack(recco, track.spotifyTrackId)
+    }
+    return res.json({ tracks: playlist.tracks });
+  } catch (err: any) {
     console.error("Inserting a track into the DB error", err);
     return res.status(500).json({
       error: 
@@ -26,4 +52,4 @@ const trackRouter  = router.get("/get-tracks", async (req, res) => {
   }
 });
 
-export default trackRouter;
+export default playlistRouter;
