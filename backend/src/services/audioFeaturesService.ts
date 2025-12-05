@@ -1,4 +1,3 @@
-// services/audioFeaturesService.ts
 import { PrismaClient } from "@prisma/client";
 import { getTrackAudioFeaturesreccoResponse } from "./reccoBeatsService";
 import { ReccoBeatsAudioFeatures } from "../types/reccoBeats";
@@ -7,7 +6,7 @@ import { SpotifyPlaylist, SpotifyTrack } from "../types/spotify";
 
 const prisma = new PrismaClient();
 
-export async function getOrFetchAudioFeaturesForTrack(recco: ReccoBeatsAudioFeatures, spotifyTrackId: string, trackInfo: SpotifyTrack) {
+export async function getOrFetchAudioFeaturesForTrackPerPlaylist(recco: ReccoBeatsAudioFeatures, spotifyTrackId: string, trackInfo: SpotifyTrack) {
   try {
     const data = recco?.content?.[0];
         if (!data) throw new Error("Missing content[0] from ReccoBeats");

@@ -1,6 +1,6 @@
 import express from "express";
-import playlistRouter from "./routes/getPlaylistTracks";
-import trackRouter from "./routes/getTrackAudioFeatures";
+import playlistRouter from "./routes/playlist";
+import trackRouter from "./routes/track";
 const app = express();
 
 app.use(express.json());

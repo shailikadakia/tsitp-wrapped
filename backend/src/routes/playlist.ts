@@ -1,10 +1,8 @@
 // routes/testAudioFeatures.ts
 import express from "express";
 const playlistRouter = express.Router();
-import { PrismaClient } from "@prisma/client";
-import { getTrackAudioFeaturesreccoResponse }from "../services/reccoBeatsService"
-import { getOrFetchAudioFeaturesForTrack} from "../services/audioFeaturesService"
 import { getTracksByPlaylist } from "../services/spotifyService";
+import { addOrGetPlaylist } from "../services/playlistService";
 
 playlistRouter.get("/get-tracks", async (req, res) => {
   const playlistId = req.query.playlistId as string | undefined;
@@ -47,6 +45,26 @@ playlistRouter.get("/get-tracks-audio-features", async (req, res) => {
     return res.status(500).json({
       error: 
       "Failed to fetch/store audio features",
+      message: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+playlistRouter.get("/add-playlists-to-db", async (req, res) => {
+  const playlistId = req.query.playlistId as string | undefined;
+  if (!playlistId) {
+    return res
+      .status(400)
+      .json({ error: "Missing query param: spotifyTrackId" });
+  }
+  try {
+    const playlist = await addOrGetPlaylist(playlistId)
+    return res.json({playlist});
+  } catch (err: any) {
+    console.error("Inserting adding playlist to the DB", err);
+    return res.status(500).json({
+      error: 
+      "Failed to fetch playlist tracks",
       message: err?.message ?? "Unknown error",
     });
   }

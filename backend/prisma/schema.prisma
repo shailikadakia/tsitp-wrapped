@@ -16,9 +16,7 @@ datasource db {
 model Playlist {
   id                Int              @id @default(autoincrement())
   name              String
-  type              String
-  subtype           String?
-  spotifyPlaylistId String?
+  spotifyPlaylistId String @unique
   tracks            PlaylistTrack[]
 }
 

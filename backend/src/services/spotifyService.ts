@@ -69,3 +69,29 @@ export async function getTrackNameAuthor(
     throw err;
   }
 }
+
+export async function getPlaylistName(
+  playlistId: string
+): Promise<string> {
+  try {
+    const accessToken = await getAppAccessToken();
+    const response = await fetch(
+      `https://api.spotify.com/v1/playlists/${playlistId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Spotify error ${response.status}`);
+    }
+
+    const json = await response.json();
+    const playlist = json as any;
+    return playlist.name
+  } catch (err) {
+    console.error("Error fetching track info from spotify:", err);
+    throw err;
+  }
+}
