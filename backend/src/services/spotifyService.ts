@@ -1,36 +1,75 @@
-import { SpotifyPlaylistAPIResponse, SpotifyTrack, SpotifyPlaylist } from "../types/spotify";
+import {
+  SpotifyPlaylistAPIResponse,
+  SpotifyTrack,
+  SpotifyPlaylist,
+} from "../types/spotify";
 import { getAppAccessToken } from "./spotifyClient";
 
-export async function getTracksByPlaylist(
-  playlistId: string
-): Promise<SpotifyPlaylist> {
-  try {
-    const accessToken = await getAppAccessToken();
-    const response = await fetch(
-      `https://api.spotify.com/v1/playlists/${playlistId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-    if (!response.ok) {
-      throw new Error(`Spotify error ${response.status}`);
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+async function spotifyFetchWithRetry(
+  url: string,
+  attempt = 0,
+): Promise<Response> {
+  const accessToken = await getAppAccessToken();
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  // Handle rate limiting (429)
+  if (response.status === 429) {
+    if (attempt >= 3) {
+      throw new Error("Spotify rate limit hit repeatedly, giving up.");
     }
 
-    const json = await response.json();
-    const res = json as SpotifyPlaylistAPIResponse
-    const tracks: SpotifyTrack[] =
-      res.tracks.items
-        .filter((item: any) => item.track != null)
-        .map((item: any) => ({
-          spotifyTrackId: item.track.id,
-          name: item.track.name ?? null,
-          artist: item.track.artists?.[0]?.name ?? null,
-        }));
+    const retryAfterHeader = response.headers.get("Retry-After");
+    const retryAfterSeconds = retryAfterHeader
+      ? Number.parseInt(retryAfterHeader, 10)
+      : 2; // fallback if header is missing / invalid
+
+    console.warn(
+      `Spotify 429 received. Retrying in ${retryAfterSeconds}s (attempt ${
+        attempt + 1
+      })`,
+    );
+
+    await sleep(retryAfterSeconds * 1000);
+    return spotifyFetchWithRetry(url, attempt + 1);
+  }
+
+  // Handle other non-OK statuses
+  if (!response.ok) {
+    const body = await response.text().catch(() => "(no body)");
+    throw new Error(`Spotify error ${response.status}: ${body}`);
+  }
+
+  return response;
+}
+
+export async function getTracksByPlaylist(
+  playlistId: string,
+): Promise<SpotifyPlaylist> {
+  try {
+    const response = await spotifyFetchWithRetry(
+      `https://api.spotify.com/v1/playlists/${playlistId}`,
+    );
+
+    const json = (await response.json()) as SpotifyPlaylistAPIResponse;
+
+    const tracks: SpotifyTrack[] = json.tracks.items
+      .filter((item: any) => item.track != null)
+      .map((item: any) => ({
+        spotifyTrackId: item.track.id,
+        name: item.track.name ?? null,
+        artist: item.track.artists?.[0]?.name ?? null,
+      }));
+
     return {
       playlistId,
-      name: res.name ?? null,
+      name: json.name ?? null,
       tracks,
     };
   } catch (err) {
@@ -41,57 +80,38 @@ export async function getTracksByPlaylist(
 
 
 export async function getTrackNameAuthor(
-  trackId: string
+  trackId: string,
 ): Promise<SpotifyTrack> {
   try {
-    const accessToken = await getAppAccessToken();
-    const response = await fetch(
+    const response = await spotifyFetchWithRetry(
       `https://api.spotify.com/v1/tracks/${trackId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
     );
-    if (!response.ok) {
-      throw new Error(`Spotify error ${response.status}`);
-    }
 
-    const json = await response.json();
-    const track = json as any;
+    const track = (await response.json()) as any;
+
     return {
       spotifyTrackId: track.id,
       name: track.name,
-      artist: [track.artists[0].name ?? null] 
-    }
+      artist: [track.artists?.[0]?.name ?? null],
+    };
   } catch (err) {
-    console.error("Error fetching track info from spotify:", err);
+    console.error("Error fetching track info from Spotify:", err);
     throw err;
   }
 }
 
 export async function getPlaylistName(
-  playlistId: string
+  playlistId: string,
 ): Promise<string> {
   try {
-    const accessToken = await getAppAccessToken();
-    const response = await fetch(
+    const response = await spotifyFetchWithRetry(
       `https://api.spotify.com/v1/playlists/${playlistId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
     );
-    if (!response.ok) {
-      throw new Error(`Spotify error ${response.status}`);
-    }
 
-    const json = await response.json();
-    const playlist = json as any;
-    return playlist.name
+    const playlist = (await response.json()) as any;
+    return playlist.name;
   } catch (err) {
-    console.error("Error fetching track info from spotify:", err);
+    console.error("Error fetching playlist info from Spotify:", err);
     throw err;
   }
 }
