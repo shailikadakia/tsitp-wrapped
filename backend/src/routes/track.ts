@@ -3,9 +3,10 @@ const router = express.Router();
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 import { getTrackAudioFeaturesreccoResponse }from "../services/reccoBeatsService"
-import { getOrFetchAudioFeaturesForTrack} from "../services/audioFeaturesService"
+import { getOrFetchAudioFeaturesForTrackPerPlaylist } from "../services/audioFeaturesService";
+import { getTrackNameAuthor } from "../services/spotifyService";
 
-const playlistRouter = router.get("/get-audio-features", async (req, res) => {
+const trackRouter = router.get("/get-audio-features", async (req, res) => {
   const spotifyTrackId = req.query.spotifyTrackId as string | undefined;
   if (!spotifyTrackId) {
     return res
@@ -14,7 +15,8 @@ const playlistRouter = router.get("/get-audio-features", async (req, res) => {
   }
   try {
     const recco = await getTrackAudioFeaturesreccoResponse(spotifyTrackId)
-    const response = await getOrFetchAudioFeaturesForTrack(recco, spotifyTrackId)
+    const track = await getTrackNameAuthor(spotifyTrackId)
+    const response = await getOrFetchAudioFeaturesForTrackPerPlaylist(recco, spotifyTrackId, track)
     return res.json({response});
   } catch (err: any) {
     console.error("Inserting a track into the DB error", err);
@@ -26,4 +28,4 @@ const playlistRouter = router.get("/get-audio-features", async (req, res) => {
   }
 });
 
-export default playlistRouter;
+export default trackRouter;

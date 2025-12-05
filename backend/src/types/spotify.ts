@@ -7,7 +7,7 @@ export type SpotifyPlaylist = {
 export type SpotifyTrack = {
   spotifyTrackId: string;
   name: string | null;
-  artist: string | null;
+  artist: string[]
 };
 
 export type SpotifyPlaylistAPIResponse = {
