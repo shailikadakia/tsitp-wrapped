@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
-import { exchangeCodeForToken } from '../lib/spotify-api';
+import { exchangeCodeForToken, getTopTracks } from '../lib/spotify-api';
 
 interface SpotifyCallbackProps {
   onSuccess: () => void;
@@ -11,15 +11,15 @@ interface SpotifyCallbackProps {
 
 export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>('Connecting to Spotify...');
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Get authorization code from URL
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
-      const error = params.get('error');
+      const authError = params.get('error');
 
-      if (error) {
+      if (authError) {
         setError('Authorization failed. Please try again.');
         return;
       }
@@ -30,17 +30,45 @@ export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
       }
 
       try {
-        // Exchange code for access token
+        // 1) Exchange code for access token
+        setStatus('Exchanging code for access token...');
         await exchangeCodeForToken(code);
-        
-        // Clear URL parameters
+
+        // 2) Fetch user’s top 50 tracks
+        setStatus('Fetching your top tracks...');
+        const topTracksData = await getTopTracks('short_term', 50);
+        const spotifyTrackIds: string[] = topTracksData.items.map(
+          (track: any) => track.id
+        );
+
+        // 3) Call your backend scoring API
+        setStatus('Analyzing your TSITP vibes...');
+        const res = await fetch('http://localhost:4000/api/score/get-score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ spotifyTrackIds }),
+        });
+
+        if (!res.ok) {
+          const body = await res.text();
+          console.error('Score API error:', body);
+          throw new Error('Failed to compute TSITP scores');
+        }
+
+        const scores = await res.json();
+        console.log(scores)
+
+        // 4) Store scores for the results page (sessionStorage is fine)
+        sessionStorage.setItem('tsitp_scores', JSON.stringify(scores));
+
+        // 5) Clear URL params
         window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Success!
+
+        // 6) Success → let parent redirect
         onSuccess();
       } catch (err) {
-        console.error('Token exchange error:', err);
-        setError('Failed to connect to Spotify. Please try again.');
+        console.error('Token / scoring error:', err);
+        setError('Failed to connect to Spotify or analyze your music. Please try again.');
       }
     };
 
@@ -73,7 +101,7 @@ export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
         <CardContent className="pt-6 text-center space-y-4">
           <Loader2 className="w-12 h-12 text-blue-500 mx-auto animate-spin" />
           <h2 className="text-xl font-semibold">Connecting to Spotify...</h2>
-          <p className="text-gray-600">Please wait while we set up your account</p>
+          <p className="text-gray-600">{status}</p>
         </CardContent>
       </Card>
     </div>

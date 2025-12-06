@@ -1,4 +1,4 @@
-import { PrismaClient, Track, AudioFeatures } from "@prisma/client";
+import { PrismaClient, Track, AudioFeatures, Prisma } from "@prisma/client";
 import { ReccoBeatsAudioFeatures } from "../types/reccoBeats";
 import { SpotifyTrack } from "../types/spotify";
 
@@ -16,27 +16,24 @@ export async function getOrFetchAudioFeaturesForTrackPerPlaylist(
       ? [trackInfo.artist]
       : [];
 
-    let track = await prisma.track.findUnique({
-      where: { spotifyTrackId },
-    });
+    const updateData: Prisma.TrackUpdateInput = {};
 
-    if (!track) {
-      track = await prisma.track.create({
-        data: {
-          spotifyTrackId,
-          name: trackInfo.name ?? null,
-          artist: artists,
-        },
-      });
-    } else {
-      track = await prisma.track.update({
-        where: { id: track.id },
-        data: {
-          name: trackInfo.name ?? track.name,
-          artist: artists.length > 0 ? artists : track.artist,
-        },
-      });
+    if (trackInfo.name != null) {
+      updateData.name = trackInfo.name;
     }
+    if (artists.length > 0) {
+      updateData.artist = artists;
+    }
+
+    const track = await prisma.track.upsert({
+      where: { spotifyTrackId },
+      create: {
+        spotifyTrackId,
+        name: trackInfo.name ?? null,
+        artist: artists,
+      },
+      update: updateData,
+    });
 
     const data = recco?.content?.[0];
 

@@ -4,17 +4,17 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 
 export function SpotifyCallbackPage() {
   const handleSuccess = () => {
-    // After successful auth, send user back to main experience
-    window.location.replace('/');
+    // After successful auth + scoring, send user to results
+    window.location.replace('/results');
   };
 
   const handleError = () => {
-    // Redirect home so users can retry the auth flow
     window.location.replace('/');
   };
 
   return (
     <div className="min-h-screen">
+      {/* background + callback as you already had */}
       <div className="fixed inset-0 z-0">
         <ImageWithFallback
           src="https://images.unsplash.com/photo-1621622807857-ae68f7e707f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdW1tZXIlMjBiZWFjaCUyMG9jZWFuJTIwc3Vuc2V0fGVufDF8fHx8MTc1ODQ3NzUwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
@@ -30,3 +30,4 @@ export function SpotifyCallbackPage() {
     </div>
   );
 }
+
