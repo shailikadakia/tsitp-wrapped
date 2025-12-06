@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
