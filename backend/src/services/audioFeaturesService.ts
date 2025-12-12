@@ -1,6 +1,6 @@
 import { PrismaClient, Track, AudioFeatures, Prisma } from "@prisma/client";
-import { ReccoBeatsAudioFeatures } from "../types/reccoBeats";
-import { SpotifyTrack } from "../types/spotify";
+import { ReccoBeatsAudioFeatures } from "../types/types";
+import { SpotifyTrack } from "../types/types";
 
 const prisma = new PrismaClient();
 

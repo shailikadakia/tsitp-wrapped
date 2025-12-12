@@ -2,7 +2,7 @@ import {
   SpotifyPlaylistAPIResponse,
   SpotifyTrack,
   SpotifyPlaylist,
-} from "../types/spotify";
+} from "../types/types";
 import { getAppAccessToken } from "./spotifyClient";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));

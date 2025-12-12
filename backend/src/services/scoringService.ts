@@ -1,7 +1,7 @@
 import { PrismaClient, Playlist } from "@prisma/client";
 import type { AudioFeatures as AudioFeaturesModel } from "@prisma/client";
 import { ensureTracksSynced } from "./trackSyncService";
-import { PlaylistScore } from "../types/playlistScore";
+import { PlaylistScore, BestMatch } from "../types/types";
 import 'dotenv/config';
 
 
@@ -325,5 +325,141 @@ export async function countSoundtrackOverlap(spotifyTrackIds: string[]) {
   return {
     overlapCount: overlappingTracks.length,
     overlapTracks: overlappingTracks, 
+  };
+}
+
+export async function countArtistOverlap(spotifyTrackIds: string[]) {
+  if (!spotifyTrackIds || spotifyTrackIds.length === 0) {
+    return {
+      overlapCount: 0,
+      overlapArtists: [],
+    };
+  }
+
+  const showTracks = await prisma.track.findMany({
+    where: {
+      playlistEntries: {
+        some: {
+          playlist: {
+            spotifyPlaylistId: SHOW,
+          },
+        },
+      },
+    },
+    select: {
+      artist: true, 
+    },
+  });
+
+  const userTracks = await prisma.track.findMany({
+    where: {
+      spotifyTrackId: { in: spotifyTrackIds },
+    },
+    select: {
+      artist: true, 
+    },
+  });
+
+  const showArtistSet = new Set<string>();
+  for (const t of showTracks) {
+    for (const a of t.artist ?? []) {
+      if (a) showArtistSet.add(a);
+    }
+  }
+
+  const userArtistSet = new Set<string>();
+  for (const t of userTracks) {
+    for (const a of t.artist ?? []) {
+      if (a) userArtistSet.add(a);
+    }
+  }
+
+  const overlapArtists: string[] = [];
+  for (const a of userArtistSet) {
+    if (showArtistSet.has(a)) {
+      overlapArtists.push(a);
+    }
+  }
+
+  return {
+    overlapCount: overlapArtists.length,
+    overlapArtists,
+  };
+}
+
+
+export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) {
+  const tracksWithFeatures = await prisma.track.findMany({
+    where: {
+      playlistEntries: {
+        some: {
+          playlistId: bestMatch.playlistId,
+        },
+      },
+      audioFeatures: {
+        isNot: null,
+      },
+    },
+    select: {
+      audioFeatures: {
+        select: {
+          danceability: true,
+          energy: true,
+          valence: true,
+        },
+      },
+    },
+  });
+
+  if (tracksWithFeatures.length === 0) {
+    return {
+      playlistId: bestMatch.playlistId,
+      playlistName: bestMatch.name,
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+    };
+  }
+
+  let sumDance = 0;
+  let sumEnergy = 0;
+  let sumValence = 0;
+  let count = 0;
+
+  for (const t of tracksWithFeatures) {
+    const af = t.audioFeatures;
+    if (!af) continue;
+
+    if (af.danceability != null) {
+      sumDance += af.danceability;
+    }
+    if (af.energy != null) {
+      sumEnergy += af.energy;
+    }
+    if (af.valence != null) {
+      sumValence += af.valence;
+    }
+    count++;
+  }
+
+  if (count === 0) {
+    return {
+      playlistId: bestMatch.playlistId,
+      playlistName: bestMatch.name,
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+    };
+  }
+
+  return {
+    playlistId: bestMatch.playlistId,
+    playlistName: bestMatch.name,
+    count,
+    avgDanceability: sumDance / count,
+    avgEnergy: sumEnergy / count,
+    avgValence: sumValence / count,
   };
 }

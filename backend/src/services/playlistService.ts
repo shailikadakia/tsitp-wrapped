@@ -1,5 +1,5 @@
 import { PrismaClient, Playlist } from "@prisma/client";
-import { SpotifyPlaylist, SpotifyTrack } from "../types/spotify";
+import { SpotifyPlaylist, SpotifyTrack } from "../types/types";
 import { getPlaylistName, getTracksByPlaylist } from "./spotifyService";
 import {getTrackAudioFeaturesreccoResponse } from "../services/reccoBeatsService"
 import { getOrFetchAudioFeaturesForTrackPerPlaylist } from "../services/audioFeaturesService"

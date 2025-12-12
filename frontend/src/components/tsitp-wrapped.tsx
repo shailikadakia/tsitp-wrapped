@@ -43,13 +43,11 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
-    // 1) Use real data if available, otherwise pull the user's top tracks saved during callback
     const tracksToAnalyze =
       userData && userData.length > 0 ? userData : buildTracksFromSession();
 
     if (tracksToAnalyze.length === 0) return;
 
-    // 2) Calculate user stats from tracks
     const totalPlays = tracksToAnalyze.reduce(
       (sum, track) => sum + (track.plays ?? 0),
       0
