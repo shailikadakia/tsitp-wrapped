@@ -42,10 +42,6 @@ export interface CharacterPlaylist {
 }
 
 export interface UserStats {
- // avgEnergy: number;
- // avgValence: number;
- // topTrack: Track;
-  summerMood: "Sunny" | "Bittersweet" | "Moody";
   bestMatch: {
     name: string;
     emoji: string;
@@ -53,11 +49,14 @@ export interface UserStats {
     vibe: string;
     scorePercent: number;
   };
-  teamConradScore: number;    // 0–100
-  teamJeremiahScore: number;  // 0–100
+  teamConradScore: number;    
+  teamJeremiahScore: number;  
   soundtrackOverlap: SoundtrackOverlap;
   artistOverlap: ArtistOverlap;
   characterAudioFeatures: CharacterAudioFeatures | null;
+  avgValence: Number,
+  avgDanceability: Number,
+  avgEnergy: Number,
 }
 
 export interface TSITPWrappedProps {

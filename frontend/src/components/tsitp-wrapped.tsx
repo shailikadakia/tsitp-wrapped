@@ -7,14 +7,12 @@ import {
   Track,
   UserStats,
   TSITPWrappedProps,
-  CharacterScore,
-  ShipScores,
   SoundtrackOverlap,
   ArtistOverlap,
   CharacterAudioFeatures,
 } from '../types/type';
 import { CHARACTER_META } from "../styles/character-record"
-import { MoodSlide } from './wrapped/mood';
+// import { MoodSlide } from './wrapped/mood';
 import { ShipSlide } from './wrapped/ship';
 import { CharacterMatchSlide } from './wrapped/character';
 import { SummerRecap } from './wrapped/summer';
@@ -63,26 +61,27 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       return;
     }
     const avgValence =  scores.characterAudioFeatures?.avgValence ?? 0
+    const avgDanceability =  scores.characterAudioFeatures?.avgDanceability ?? 0
+    const avgEnergy =  scores.characterAudioFeatures?.avgEnergy ?? 0
+
     const soundtrackOverlap: SoundtrackOverlap =
       scores.soundtrackOverlap ?? { overlapCount: 0, overlapTracks: [] };
     const artistOverlap: ArtistOverlap =
       scores.artistOverlap ?? { overlapCount: 0, overlapArtists: [] };
     const characterAudioFeatures: CharacterAudioFeatures | null =
       scores.characterAudioFeatures ?? null;
-    const summerMood: UserStats['summerMood'] =
-      avgValence > 0.5 ? 'Sunny' : avgValence > 0.3 ? 'Bittersweet' : 'Moody';
-
+  
     const backendBest = scores.characterMatch;
     const meta =
-      CHARACTER_META[backendBest.name] ?? CHARACTER_META['Belly'];
+      CHARACTER_META[backendBest.name]
 
-    // 5) Use backend ship scores
     const teamConradScore = scores.shipScores.teamConrad.scorePercent;
     const teamJeremiahScore = scores.shipScores.teamJeremiah.scorePercent;
 
-    // 6) Combine into single stats object for UI
     setUserStats({
-      summerMood,
+      avgDanceability,
+      avgEnergy,
+      avgValence,
       bestMatch: {
         name: backendBest.name,
         emoji: meta.emoji,
@@ -99,55 +98,47 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
   }, [userData]);
 
   const slides = [
-    // Welcome
     {
       title: "Your TSITP Summer Wrapped",
       content: <WelcomeSlide />
     },
-
-    // Summer Stats
     {
       title: "Your Summer in Numbers",
       content: userStats && <SummerRecap userStats={userStats} />
     },
-
-    // Character Match (now driven by backend characterMatch)
     {
       title: "Your Character Match",
       content: userStats && <CharacterMatchSlide userStats={userStats} />
     },
-
-    // Team Analysis – now fully backend-driven
     {
       title: "Team Conrad vs Team Jeremiah",
       content: userStats && <ShipSlide userStats={userStats} />
     },
-
-    // Summer Mood
+    /*
     {
       title: "Your Summer Mood",
       content: userStats && <MoodSlide userStats={userStats} />
     },
-
+    */
   ];
 
   const nextSlide = () => {
     if (currentSlide === slides.length - 1) {
-      onBack(); 
+      onBack();
       return;
     }
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide((prev) => prev + 1);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide((prev) => Math.max(prev - 1, 0));
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <Card className="bg-white/80 backdrop-blur-sm border-2 border-white/50 shadow-xl">
-          <CardHeader className="text-center border-b border-gray-100">
+      <div className="w-full max-w-md">
+        <Card className="flex flex-col w-full h-[80vh] max-h-[900px] min-h-0 bg-white/80 backdrop-blur-sm border-2 border-white/50 shadow-xl overflow-hidden">
+          <CardHeader className="flex-shrink-0 text-center border-b border-gray-100">
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={onBack}>
                 <ArrowLeft className="w-4 h-4" />
@@ -169,11 +160,11 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
             </div>
           </CardHeader>
 
-          <CardContent className="p-6 min-h-[400px] flex items-center">
+          <CardContent className="flex-1 min-h-0 overflow-y-auto px-6 pt-3 pb-6">
             {slides[currentSlide].content}
-          </CardContent>
+        </CardContent>
 
-          <div className="flex justify-between p-4 border-t border-gray-100">
+          <div className="flex-shrink-0 flex justify-between p-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
             <Button
               variant="outline"
               onClick={prevSlide}
@@ -187,7 +178,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
               onClick={nextSlide}
               className="bg-gradient-to-r from-blue-500 via-purple-400 to-pink-400 hover:opacity-90 shadow-md"
             >
-              {currentSlide === slides.length - 1 ? "Back to Home" : "Next"}
+              {currentSlide === slides.length - 1 ? 'Back to Home' : 'Next'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>

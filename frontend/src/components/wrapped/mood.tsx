@@ -4,7 +4,9 @@ import { Card, CardContent } from '../ui/card';
 import { UserStats } from '../../types/type';
 
 export function MoodSlide({ userStats }: { userStats: UserStats }) {
+  /*
   return (
+    
     <div className="space-y-6 text-center">
       <div>
         <div className="text-6xl mb-4">
@@ -36,4 +38,6 @@ export function MoodSlide({ userStats }: { userStats: UserStats }) {
       </div>
     </div>
   );
+  
 }
+*/
