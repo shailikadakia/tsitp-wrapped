@@ -4,7 +4,6 @@ import { json } from "stream/consumers";
 
 const scoreRouter = express.Router();
 
-https://open.spotify.com/track/4OAuvHryIVv4kMDNSLuPt6?si=42c04d6b16ad4a3b
 scoreRouter.post("/get-score", async (req, res) => {
   try {
     const { spotifyTrackIds } = req.body;

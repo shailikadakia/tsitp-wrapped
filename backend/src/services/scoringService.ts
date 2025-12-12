@@ -1,7 +1,20 @@
 import { PrismaClient, Playlist } from "@prisma/client";
 import type { AudioFeatures as AudioFeaturesModel } from "@prisma/client";
+import { ensureTracksSynced } from "./trackSyncService";
+import { PlaylistScore } from "../types/playlistScore";
+import 'dotenv/config';
+
 
 const prisma = new PrismaClient();
+
+const BELLY = process.env.BELLY!
+const JEREMIAH = process.env.JEREMIAH!
+const CONRAD = process.env.CONRAD!
+const TAYLOR = process.env.TAYLOR!
+const STEVEN= process.env.STEVEN!
+const SHOW = process.env.SHOW!
+const TEAM_CONRAD= process.env.TEAM_CONRAD!
+const TEAM_JEREMIAH = process.env.TEAM_JEREMIAH!
 
 function loudnessToUnit(loudnessDb: number): number {
   const min = -60;
@@ -183,8 +196,6 @@ export async function getPlaylistCentroidBySpotifyId(
 
   
 }
-import { ensureTracksSynced } from "./trackSyncService";
-
 
 export async function getUserCentroidFromSpotifyTrackIds(
   spotifyTrackIds: string[]
@@ -219,15 +230,6 @@ export async function getUserCentroidFromSpotifyTrackIds(
   };
 }
 
-
-export type PlaylistScore = {
-  playlistId: number;
-  spotifyPlaylistId: string;
-  name: string;
-  score: number;        
-  scorePercent: number; 
-};
-
 export async function scoreUserAgainstPlaylistBySpotifyId(
   spotifyPlaylistId: string,
   userSpotifyTrackIds: string[]   
@@ -250,30 +252,15 @@ export async function scoreUserAgainstPlaylistBySpotifyId(
   };
 }
 
-const CHARACTER_PLAYLISTS = {
-  BELLY: "41aa6enLM2wtRwSM5SM7Sh",
-  CONRAD: "7lj4H1NYnEOYbglHG2r33d",
-  JEREMIAH: "56UhqpBYxGxAYvUiaE8XG0",
-  STEVEN: "5zRsAtjfSao2FV11RAHMh3",
-  TAYLOR: "73QvP9Wp2fizzgUgPCoruT"
-};
-
-const SHIP_PLAYLISTS = {
-  TEAM_CONRAD: "7gIGb1GKF2yiQv9nfYKFgC",
-  TEAM_JEREMIAH: "3yefpSTulj1IpNHvVG8SNy",
-};
-
-const SHOW_SOUNDTRACK = "7kQgEsY7hsBRxO5dEcBaEG"
-
 export async function scoreUserForCharacters(
   userSpotifyTrackIds: string[]
 ) {
   const [belly, conrad, jeremiah, steven, taylor] = await Promise.all([
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.BELLY, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.CONRAD, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.JEREMIAH, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.STEVEN, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.TAYLOR, userSpotifyTrackIds)
+    scoreUserAgainstPlaylistBySpotifyId(BELLY, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(CONRAD, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(JEREMIAH, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(STEVEN, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(TAYLOR, userSpotifyTrackIds)
   ]);
 
   const all = [belly, conrad, jeremiah, steven, taylor];
@@ -295,8 +282,8 @@ export async function scoreUserForShips(
   userSpotifyTrackIds: string[]
 ) {
   const [teamConrad, teamJeremiah] = await Promise.all([
-    scoreUserAgainstPlaylistBySpotifyId(SHIP_PLAYLISTS.TEAM_CONRAD, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(SHIP_PLAYLISTS.TEAM_JEREMIAH, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(TEAM_CONRAD, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(TEAM_JEREMIAH, userSpotifyTrackIds),
   ]);
 
   const ship =
@@ -323,7 +310,7 @@ export async function countSoundtrackOverlap(spotifyTrackIds: string[]) {
       playlistEntries: {
         some: {
           playlist: {
-            spotifyPlaylistId: SHOW_SOUNDTRACK,
+            spotifyPlaylistId: SHOW,
           },
         },
       },

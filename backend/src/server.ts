@@ -5,8 +5,6 @@ import scoreRouter from "./routes/score";
 import cors from "cors";
 
 const app = express();
-
-// Allow your frontend origin(s)
 app.use(
   cors({
     origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
