@@ -7,7 +7,6 @@ const scoreRouter = express.Router();
 scoreRouter.post("/get-score", async (req, res) => {
   try {
     const { spotifyTrackIds } = req.body;
-    console.log(spotifyTrackIds)
 
     const characterScores = await scoreUserForCharacters(spotifyTrackIds);
     const shipScores = await scoreUserForShips(spotifyTrackIds);
