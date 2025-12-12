@@ -30,18 +30,17 @@ export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
       }
 
       try {
-        // 1) Exchange code for access token
         setStatus('Exchanging code for access token...');
         await exchangeCodeForToken(code);
 
-        // 2) Fetch user’s top 50 tracks
         setStatus('Fetching your top tracks...');
-        const topTracksData = await getTopTracks('short_term', 50);
+        const topTracksData: any = await getTopTracks('long_term', 50);
         const spotifyTrackIds: string[] = topTracksData.items.map(
           (track: any) => track.id
         );
 
-        // 3) Call your backend scoring API
+        sessionStorage.setItem('tsitp_top_tracks', JSON.stringify(topTracksData));
+
         setStatus('Analyzing your TSITP vibes...');
         const res = await fetch('http://localhost:4000/api/score/get-score', {
           method: 'POST',
@@ -56,15 +55,12 @@ export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
         }
 
         const scores = await res.json();
-        console.log(scores)
+        console.log(scores);
 
-        // 4) Store scores for the results page (sessionStorage is fine)
         sessionStorage.setItem('tsitp_scores', JSON.stringify(scores));
 
-        // 5) Clear URL params
         window.history.replaceState({}, document.title, window.location.pathname);
 
-        // 6) Success → let parent redirect
         onSuccess();
       } catch (err) {
         console.error('Token / scoring error:', err);
@@ -83,7 +79,7 @@ export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
             <h2 className="text-xl font-semibold">Connection Failed</h2>
             <p className="text-gray-600">{error}</p>
-            <Button 
+            <Button
               onClick={onError}
               className="bg-gradient-to-r from-blue-500 via-purple-400 to-pink-400 hover:opacity-90"
             >

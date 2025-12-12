@@ -5,7 +5,58 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Heart, Music, Waves, Sun, Moon, ArrowLeft, ArrowRight, Share, Download } from 'lucide-react';
 
-// Mock data types
+type CharacterScore = {
+  playlistId: number;
+  spotifyPlaylistId: string;
+  name: string;
+  score: number;
+  scorePercent: number;
+};
+
+type ShipScores = {
+  teamConrad: CharacterScore;
+  teamJeremiah: CharacterScore;
+};
+
+type TsitpScoresResponse = {
+  characterMatch: CharacterScore;                     
+  characterScores: Record<string, CharacterScore>;    
+  shipMatch: string;                                  
+  shipScores: ShipScores;                             
+};
+
+const CHARACTER_META: Record<
+  string,
+  { color: string; emoji: string; vibe: string }
+> = {
+  Belly: {
+    color: "from-pink-400 via-rose-400 to-purple-400",
+    emoji: "💕",
+    vibe: "Coming-of-Age Mix",
+  },
+  Conrad: {
+    color: "from-blue-600 via-blue-500 to-cyan-400",
+    emoji: "🌊",
+    vibe: "Moody & Introspective",
+  },
+  Jeremiah: {
+    color: "from-orange-400 via-amber-400 to-yellow-300",
+    emoji: "☀️",
+    vibe: "Sunny & Upbeat",
+  },
+  Steven: {
+    color: "from-emerald-400 via-teal-400 to-cyan-400",
+    emoji: "🎧",
+    vibe: "Chill & Playful",
+  },
+  Taylor: {
+    color: "from-fuchsia-400 via-pink-400 to-red-400",
+    emoji: "💄",
+    vibe: "Bold & Confident",
+  },
+};
+
+// Track + mock playlist types
 interface Track {
   name: string;
   artist: string;
@@ -26,7 +77,7 @@ interface CharacterPlaylist {
   avgValence: number;
 }
 
-// Mock user data
+// Mock user data (used if you don't pass real userData yet)
 const mockUserTracks: Track[] = [
   { name: "Cruel Summer", artist: "Taylor Swift", energy: 0.73, valence: 0.56, danceability: 0.55, acousticness: 0.11, plays: 87 },
   { name: "This Love (Taylor's Version)", artist: "Taylor Swift", energy: 0.32, valence: 0.21, danceability: 0.35, acousticness: 0.72, plays: 45 },
@@ -38,7 +89,7 @@ const mockUserTracks: Track[] = [
   { name: "Good 4 U", artist: "Olivia Rodrigo", energy: 0.78, valence: 0.43, danceability: 0.56, acousticness: 0.20, plays: 24 },
 ];
 
-// Character playlists
+// (These playlists aren't used for scoring anymore, but you can keep for reference/UI)
 const characterPlaylists: CharacterPlaylist[] = [
   {
     name: "Conrad",
@@ -84,6 +135,23 @@ const characterPlaylists: CharacterPlaylist[] = [
   }
 ];
 
+interface UserStats {
+  totalPlays: number;
+  avgEnergy: number;
+  avgValence: number;
+  topTrack: Track;
+  summerMood: "Sunny" | "Bittersweet" | "Moody";
+  bestMatch: {
+    name: string;
+    emoji: string;
+    color: string;
+    vibe: string;
+    scorePercent: number;
+  };
+  teamConradScore: number;    // 0–100
+  teamJeremiahScore: number;  // 0–100
+}
+
 interface TSITPWrappedProps {
   onBack: () => void;
   userData?: Track[] | null;
@@ -91,41 +159,75 @@ interface TSITPWrappedProps {
 
 export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [userStats, setUserStats] = useState<any>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
-    // Use real data if available, otherwise use mock data
-    const tracksToAnalyze = userData && userData.length > 0 ? userData : mockUserTracks;
-    
-    // Calculate user stats
-    const totalPlays = tracksToAnalyze.reduce((sum, track) => sum + track.plays, 0);
-    const avgEnergy = tracksToAnalyze.reduce((sum, track) => sum + track.energy, 0) / tracksToAnalyze.length;
-    const avgValence = tracksToAnalyze.reduce((sum, track) => sum + track.valence, 0) / tracksToAnalyze.length;
-    const topTrack = [...tracksToAnalyze].sort((a, b) => b.plays - a.plays)[0];
-    
-    // Character matching
-    const characterScores = characterPlaylists.map(character => {
-      const energyDiff = Math.abs(character.avgEnergy - avgEnergy);
-      const valenceDiff = Math.abs(character.avgValence - avgValence);
-      const score = 1 - (energyDiff + valenceDiff) / 2;
-      return { ...character, score };
-    });
-    
-    const bestMatch = characterScores.sort((a, b) => b.score - a.score)[0];
-    
-    // Team assignment
-    const teamConradScore = avgValence < 0.4 && avgEnergy < 0.5 ? 0.8 : 0.3;
-    const teamJeremiahScore = 1 - teamConradScore;
-    
+    // 1) Use real data if available, otherwise use mock data
+    const tracksToAnalyze =
+      userData && userData.length > 0 ? userData : mockUserTracks;
+
+    if (tracksToAnalyze.length === 0) return;
+
+    // 2) Calculate user stats from tracks
+    const totalPlays = tracksToAnalyze.reduce(
+      (sum, track) => sum + (track.plays ?? 0),
+      0
+    );
+    const avgEnergy =
+      tracksToAnalyze.reduce((sum, track) => sum + track.energy, 0) /
+      tracksToAnalyze.length;
+    const avgValence =
+      tracksToAnalyze.reduce((sum, track) => sum + track.valence, 0) /
+      tracksToAnalyze.length;
+
+    const topTrack =
+      [...tracksToAnalyze].sort(
+        (a, b) => (b.plays ?? 0) - (a.plays ?? 0)
+      )[0] ?? tracksToAnalyze[0];
+
+    const summerMood: UserStats['summerMood'] =
+      avgValence > 0.5 ? 'Sunny' : avgValence > 0.3 ? 'Bittersweet' : 'Moody';
+
+    // 3) Load backend TSITP scores from sessionStorage
+    const rawScores = sessionStorage.getItem('tsitp_scores');
+    if (!rawScores) {
+      console.warn('No tsitp_scores found in sessionStorage');
+      return;
+    }
+
+    let scores: TsitpScoresResponse;
+    try {
+      scores = JSON.parse(rawScores);
+    } catch (e) {
+      console.error('Failed to parse tsitp_scores', e);
+      return;
+    }
+
+    // 4) Use backend characterMatch as best match
+    const backendBest = scores.characterMatch;
+    const meta =
+      CHARACTER_META[backendBest.name] ?? CHARACTER_META['Belly'];
+
+    // 5) Use backend ship scores
+    const teamConradScore = scores.shipScores.teamConrad.scorePercent;
+    const teamJeremiahScore = scores.shipScores.teamJeremiah.scorePercent;
+
+    // 6) Combine into single stats object for UI
     setUserStats({
       totalPlays,
       avgEnergy,
       avgValence,
       topTrack,
-      bestMatch,
-      teamConradScore: teamConradScore * 100,
-      teamJeremiahScore: teamJeremiahScore * 100,
-      summerMood: avgValence > 0.5 ? "Sunny" : avgValence > 0.3 ? "Bittersweet" : "Moody"
+      summerMood,
+      bestMatch: {
+        name: backendBest.name,
+        emoji: meta.emoji,
+        color: meta.color,
+        vibe: meta.vibe,
+        scorePercent: backendBest.scorePercent,
+      },
+      teamConradScore,
+      teamJeremiahScore,
     });
   }, [userData]);
 
@@ -141,13 +243,13 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
           </p>
           <div className="bg-white/50 rounded-lg p-4">
             <p className="text-sm text-gray-500">
-              Based on your summer listening from June - August 2024
+              Based on your top 50 tracks this year
             </p>
           </div>
         </div>
       )
     },
-    
+
     // Summer Stats
     {
       title: "Your Summer in Numbers",
@@ -167,7 +269,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
               </CardContent>
             </Card>
           </div>
-          
+
           <Card className="bg-white/70">
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-3">Your Summer Anthem</h3>
@@ -188,20 +290,23 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
         </div>
       )
     },
-    
-    // Character Match
+
+    // Character Match (now driven by backend characterMatch)
     {
       title: "Your Character Match",
       content: userStats && (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="text-6xl mb-4">{userStats.bestMatch.emoji}</div>
-            <h2 className="text-2xl font-bold mb-2">You're a {userStats.bestMatch.name}!</h2>
+            <div className="text-6xl mb-2">{userStats.bestMatch.emoji}</div>
+            <h2 className="text-2xl font-bold mb-1">You're a {userStats.bestMatch.name}!</h2>
+            <p className="text-sm text-gray-500 mb-1">
+              Match score: {userStats.bestMatch.scorePercent}%
+            </p>
             <Badge className={`bg-gradient-to-r ${userStats.bestMatch.color} text-white`}>
               {userStats.bestMatch.vibe}
             </Badge>
           </div>
-          
+
           <Card className="bg-white/70">
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-3">Why you match {userStats.bestMatch.name}:</h3>
@@ -221,12 +326,14 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-4 p-3 bg-blue-50/80 rounded-lg border border-blue-200/40">
                 <p className="text-sm text-gray-700">
                   {userStats.bestMatch.name === "Conrad" && "Your taste for introspective, moody tracks matches Conrad's deep, thoughtful nature - like late night walks on the beach."}
                   {userStats.bestMatch.name === "Jeremiah" && "Your love for upbeat, sunny songs reflects Jeremiah's optimistic and fun personality - pure golden hour vibes."}
                   {userStats.bestMatch.name === "Belly" && "Your mix of coming-of-age anthems and emotional tracks captures Belly's journey perfectly - the magic of summers at Cousins Beach."}
+                  {userStats.bestMatch.name === "Steven" && "You’ve got that chill, fun energy that keeps the group grounded – just like Steven."}
+                  {userStats.bestMatch.name === "Taylor" && "Bold bops, high energy, and main-character vibes? That’s pure Taylor energy."}
                 </p>
               </div>
             </CardContent>
@@ -234,16 +341,19 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
         </div>
       )
     },
-    
-    // Team Analysis
+
+    // Team Analysis – now fully backend-driven
     {
       title: "Team Conrad vs Team Jeremiah",
       content: userStats && (
         <div className="space-y-6">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-4">Based on your music vibes...</h2>
+            <h2 className="text-xl font-semibold mb-1">Based on your music vibes...</h2>
+            <p className="text-sm text-gray-500">
+              (Matched against the official Belly × Conrad and Belly × Jeremiah playlists)
+            </p>
           </div>
-          
+
           <div className="space-y-4">
             <Card className="bg-white/70">
               <CardContent className="pt-6">
@@ -258,7 +368,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
                 <p className="text-xs text-gray-600">Moody indie vibes • Introspective ballads</p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-white/70">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
@@ -273,7 +383,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="bg-white/50 rounded-lg p-4 text-center">
             <p className="text-sm text-gray-600">
               You're <strong>{userStats.teamConradScore > userStats.teamJeremiahScore ? "Team Conrad" : "Team Jeremiah"}</strong> based on your summer playlist!
@@ -282,7 +392,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
         </div>
       )
     },
-    
+
     // Summer Mood
     {
       title: "Your Summer Mood",
@@ -294,7 +404,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
             </div>
             <h2 className="text-2xl font-bold mb-2">Your Summer Was {userStats.summerMood}</h2>
           </div>
-          
+
           <Card className="bg-white/70">
             <CardContent className="pt-6">
               <p className="text-sm text-gray-600 mb-4">
@@ -302,15 +412,15 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
                 {userStats.summerMood === "Bittersweet" && "You balanced happy summer hits with some deeper, more emotional tracks."}
                 {userStats.summerMood === "Moody" && "Your summer soundtrack leaned introspective - perfect for those deep beach walks."}
               </p>
-              
+
               <div className="text-xs text-gray-500">
-                Just like {userStats.summerMood === "Sunny" ? "Jeremiah's golden hour energy" : 
-                         userStats.summerMood === "Bittersweet" ? "Belly's coming-of-age journey" : 
+                Just like {userStats.summerMood === "Sunny" ? "Jeremiah's golden hour energy" :
+                         userStats.summerMood === "Bittersweet" ? "Belly's coming-of-age journey" :
                          "Conrad's contemplative beach moments"}
               </div>
             </CardContent>
           </Card>
-          
+
           <div className="bg-gradient-to-r from-blue-100 to-pink-100 rounded-lg p-4">
             <p className="text-sm text-gray-700">
               "The summer that changed everything" 🏖️
@@ -319,7 +429,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
         </div>
       )
     },
-    
+
     // Share
     {
       title: "Share Your TSITP Wrapped",
@@ -327,7 +437,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
         <div className="space-y-6 text-center">
           <div className="text-4xl">📱</div>
           <p className="text-lg">Ready to share your results?</p>
-          
+
           <div className="space-y-3">
             <Button className="w-full bg-gradient-to-r from-blue-500 via-purple-400 to-pink-400 hover:opacity-90 shadow-md">
               <Share className="w-4 h-4 mr-2" />
@@ -338,7 +448,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
               Download Image
             </Button>
           </div>
-          
+
           <div className="bg-blue-50/60 rounded-lg p-4 border border-blue-200/40">
             <p className="text-xs text-gray-600">
               Tag us @tsitpwrapped and use #TSITPWrapped to see other fans' results!
@@ -382,14 +492,14 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
               ))}
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-6 min-h-[400px] flex items-center">
             {slides[currentSlide].content}
           </CardContent>
-          
+
           <div className="flex justify-between p-4 border-t border-gray-100">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={prevSlide}
               disabled={currentSlide === 0}
               className="border-blue-300/50 hover:bg-blue-50/50"
@@ -397,7 +507,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <Button 
+            <Button
               onClick={nextSlide}
               disabled={currentSlide === slides.length - 1}
               className="bg-gradient-to-r from-blue-500 via-purple-400 to-pink-400 hover:opacity-90 shadow-md"

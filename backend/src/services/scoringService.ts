@@ -251,9 +251,6 @@ export async function scoreUserAgainstPlaylistBySpotifyId(
   };
 }
 
-
-// src/services/scoringService.ts (continued)
-
 const CHARACTER_PLAYLISTS = {
   BELLY: "41aa6enLM2wtRwSM5SM7Sh",
   CONRAD: "7lj4H1NYnEOYbglHG2r33d",
