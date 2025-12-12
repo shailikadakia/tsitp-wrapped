@@ -9,6 +9,9 @@ import {
   TSITPWrappedProps,
   CharacterScore,
   ShipScores,
+  SoundtrackOverlap,
+  ArtistOverlap,
+  CharacterAudioFeatures,
 } from '../types/type';
 import { CHARACTER_META } from "../styles/character-record"
 import { MoodSlide } from './wrapped/mood';
@@ -47,27 +50,6 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       userData && userData.length > 0 ? userData : buildTracksFromSession();
 
     if (tracksToAnalyze.length === 0) return;
-
-    const totalPlays = tracksToAnalyze.reduce(
-      (sum, track) => sum + (track.plays ?? 0),
-      0
-    );
-    const avgEnergy =
-      tracksToAnalyze.reduce((sum, track) => sum + track.energy, 0) /
-      tracksToAnalyze.length;
-    const avgValence =
-      tracksToAnalyze.reduce((sum, track) => sum + track.valence, 0) /
-      tracksToAnalyze.length;
-
-    const topTrack =
-      [...tracksToAnalyze].sort(
-        (a, b) => (b.plays ?? 0) - (a.plays ?? 0)
-      )[0] ?? tracksToAnalyze[0];
-
-    const summerMood: UserStats['summerMood'] =
-      avgValence > 0.5 ? 'Sunny' : avgValence > 0.3 ? 'Bittersweet' : 'Moody';
-
-    // 3) Load backend TSITP scores from sessionStorage (must exist; otherwise abort)
     const rawScores = sessionStorage.getItem('tsitp_scores');
     if (!rawScores) {
       console.warn('No tsitp_scores found in sessionStorage');
@@ -80,8 +62,16 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       console.error('Failed to parse tsitp_scores', e);
       return;
     }
+    const avgValence =  scores.characterAudioFeatures?.avgValence ?? 0
+    const soundtrackOverlap: SoundtrackOverlap =
+      scores.soundtrackOverlap ?? { overlapCount: 0, overlapTracks: [] };
+    const artistOverlap: ArtistOverlap =
+      scores.artistOverlap ?? { overlapCount: 0, overlapArtists: [] };
+    const characterAudioFeatures: CharacterAudioFeatures | null =
+      scores.characterAudioFeatures ?? null;
+    const summerMood: UserStats['summerMood'] =
+      avgValence > 0.5 ? 'Sunny' : avgValence > 0.3 ? 'Bittersweet' : 'Moody';
 
-    // 4) Use backend characterMatch as best match
     const backendBest = scores.characterMatch;
     const meta =
       CHARACTER_META[backendBest.name] ?? CHARACTER_META['Belly'];
@@ -92,10 +82,6 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
 
     // 6) Combine into single stats object for UI
     setUserStats({
-      totalPlays,
-      avgEnergy,
-      avgValence,
-      topTrack,
       summerMood,
       bestMatch: {
         name: backendBest.name,
@@ -106,6 +92,9 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       },
       teamConradScore,
       teamJeremiahScore,
+      soundtrackOverlap,
+      artistOverlap,
+      characterAudioFeatures,
     });
   }, [userData]);
 

@@ -16,6 +16,9 @@ export type TsitpScoresResponse = {
   characterScores: Record<string, CharacterScore>;    
   shipMatch: string;                                  
   shipScores: ShipScores;                             
+  soundtrackOverlap: SoundtrackOverlap;
+  artistOverlap: ArtistOverlap;
+  characterAudioFeatures: CharacterAudioFeatures | null;
 };
 
 export interface Track {
@@ -39,10 +42,9 @@ export interface CharacterPlaylist {
 }
 
 export interface UserStats {
-  totalPlays: number;
-  avgEnergy: number;
-  avgValence: number;
-  topTrack: Track;
+ // avgEnergy: number;
+ // avgValence: number;
+ // topTrack: Track;
   summerMood: "Sunny" | "Bittersweet" | "Moody";
   bestMatch: {
     name: string;
@@ -53,9 +55,35 @@ export interface UserStats {
   };
   teamConradScore: number;    // 0–100
   teamJeremiahScore: number;  // 0–100
+  soundtrackOverlap: SoundtrackOverlap;
+  artistOverlap: ArtistOverlap;
+  characterAudioFeatures: CharacterAudioFeatures | null;
 }
 
 export interface TSITPWrappedProps {
   onBack: () => void;
   userData?: Track[] | null;
 }
+
+export type SoundtrackOverlap = {
+  overlapCount: number;
+  overlapTracks: {
+    spotifyTrackId: string;
+    name: string | null;
+    artist: string[] | null;
+  }[];
+};
+
+export type ArtistOverlap = {
+  overlapCount: number;
+  overlapArtists: string[];
+};
+
+export type CharacterAudioFeatures = {
+  playlistId: number;
+  playlistName: string;
+  count: number;
+  avgDanceability: number | null;
+  avgEnergy: number | null;
+  avgValence: number | null;
+};

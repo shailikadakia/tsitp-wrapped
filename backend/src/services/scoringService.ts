@@ -463,3 +463,62 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
     avgValence: sumValence / count,
   };
 }
+
+export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) {
+  if (!spotifyTrackIds || spotifyTrackIds.length === 0) {
+    return {
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+    };
+  }
+
+  const tracks = await prisma.track.findMany({
+    where: {
+      spotifyTrackId: { in: spotifyTrackIds },
+      audioFeatures: { isNot: null },
+    },
+    select: {
+      audioFeatures: {
+        select: {
+          danceability: true,
+          energy: true,
+          valence: true,
+        },
+      },
+    },
+  });
+
+  if (tracks.length === 0) {
+    return {
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+    };
+  }
+
+  let sumDance = 0;
+  let sumEnergy = 0;
+  let sumValence = 0;
+  let count = 0;
+
+  for (const t of tracks) {
+    const af = t.audioFeatures;
+    if (!af) continue;
+
+    if (af.danceability != null) sumDance += af.danceability;
+    if (af.energy != null) sumEnergy += af.energy;
+    if (af.valence != null) sumValence += af.valence;
+
+    count++;
+  }
+
+  return {
+    count,
+    avgDanceability: sumDance / count,
+    avgEnergy: sumEnergy / count,
+    avgValence: sumValence / count,
+  };
+}

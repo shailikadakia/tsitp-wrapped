@@ -1,11 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import React from 'react';
+import { Card, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
-import { Music, Sun, Moon, ArrowLeft, ArrowRight } from 'lucide-react';
-import { CharacterScore, ShipScores, TsitpScoresResponse, Track, CharacterPlaylist, UserStats, TSITPWrappedProps  } from '../../types/type';
+import { Sun, Moon } from 'lucide-react';
+import { UserStats } from '../../types/type';
 
 export function ShipSlide({ userStats }: { userStats: UserStats }) {
   return (
