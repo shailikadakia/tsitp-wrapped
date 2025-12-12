@@ -406,6 +406,7 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
           danceability: true,
           energy: true,
           valence: true,
+          acousticness: true,
         },
       },
     },
@@ -419,6 +420,7 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
       avgDanceability: null,
       avgEnergy: null,
       avgValence: null,
+      avgAcoustics: null
     };
   }
 
@@ -426,6 +428,7 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
   let sumEnergy = 0;
   let sumValence = 0;
   let count = 0;
+  let sumAcoustics = 0;
 
   for (const t of tracksWithFeatures) {
     const af = t.audioFeatures;
@@ -440,6 +443,9 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
     if (af.valence != null) {
       sumValence += af.valence;
     }
+    if (af.acousticness != null) {
+      sumAcoustics += af.acousticness;
+    }
     count++;
   }
 
@@ -451,6 +457,7 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
       avgDanceability: null,
       avgEnergy: null,
       avgValence: null,
+      avgAcoustics: null
     };
   }
 
@@ -461,6 +468,7 @@ export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) 
     avgDanceability: sumDance / count,
     avgEnergy: sumEnergy / count,
     avgValence: sumValence / count,
+    avgAcoustics: sumAcoustics / count
   };
 }
 
@@ -471,6 +479,7 @@ export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) 
       avgDanceability: null,
       avgEnergy: null,
       avgValence: null,
+      avgAcoustics: null
     };
   }
 
@@ -485,6 +494,7 @@ export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) 
           danceability: true,
           energy: true,
           valence: true,
+          acousticness: true
         },
       },
     },
@@ -496,6 +506,7 @@ export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) 
       avgDanceability: null,
       avgEnergy: null,
       avgValence: null,
+      avgAcoustics: null
     };
   }
 
@@ -503,6 +514,7 @@ export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) 
   let sumEnergy = 0;
   let sumValence = 0;
   let count = 0;
+  let sumAcoustics = 0
 
   for (const t of tracks) {
     const af = t.audioFeatures;
@@ -511,6 +523,7 @@ export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) 
     if (af.danceability != null) sumDance += af.danceability;
     if (af.energy != null) sumEnergy += af.energy;
     if (af.valence != null) sumValence += af.valence;
+    if (af.acousticness != null) sumAcoustics += af.acousticness;
 
     count++;
   }
@@ -520,5 +533,6 @@ export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) 
     avgDanceability: sumDance / count,
     avgEnergy: sumEnergy / count,
     avgValence: sumValence / count,
+    avgAcoustics: sumAcoustics / count
   };
 }

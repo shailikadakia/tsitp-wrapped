@@ -9,10 +9,10 @@ import {
   TSITPWrappedProps,
   SoundtrackOverlap,
   ArtistOverlap,
-  CharacterAudioFeatures,
+  AudioFeatures,
 } from '../types/type';
 import { CHARACTER_META } from "../styles/character-record"
-// import { MoodSlide } from './wrapped/mood';
+import { MoodSlide } from './wrapped/mood';
 import { ShipSlide } from './wrapped/ship';
 import { CharacterMatchSlide } from './wrapped/character';
 import { SummerRecap } from './wrapped/summer';
@@ -60,17 +60,15 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       console.error('Failed to parse tsitp_scores', e);
       return;
     }
-    const avgValence =  scores.characterAudioFeatures?.avgValence ?? 0
-    const avgDanceability =  scores.characterAudioFeatures?.avgDanceability ?? 0
-    const avgEnergy =  scores.characterAudioFeatures?.avgEnergy ?? 0
-
     const soundtrackOverlap: SoundtrackOverlap =
       scores.soundtrackOverlap ?? { overlapCount: 0, overlapTracks: [] };
     const artistOverlap: ArtistOverlap =
       scores.artistOverlap ?? { overlapCount: 0, overlapArtists: [] };
-    const characterAudioFeatures: CharacterAudioFeatures | null =
+    const characterAudioFeatures: AudioFeatures | null =
       scores.characterAudioFeatures ?? null;
-  
+    const summerMood: AudioFeatures | null =
+          scores.summerMood ?? null;  
+          
     const backendBest = scores.characterMatch;
     const meta =
       CHARACTER_META[backendBest.name]
@@ -79,9 +77,6 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
     const teamJeremiahScore = scores.shipScores.teamJeremiah.scorePercent;
 
     setUserStats({
-      avgDanceability,
-      avgEnergy,
-      avgValence,
       bestMatch: {
         name: backendBest.name,
         emoji: meta.emoji,
@@ -94,6 +89,7 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       soundtrackOverlap,
       artistOverlap,
       characterAudioFeatures,
+      summerMood
     });
   }, [userData]);
 
@@ -114,12 +110,11 @@ export function TSITPWrapped({ onBack, userData }: TSITPWrappedProps) {
       title: "Team Conrad vs Team Jeremiah",
       content: userStats && <ShipSlide userStats={userStats} />
     },
-    /*
     {
       title: "Your Summer Mood",
       content: userStats && <MoodSlide userStats={userStats} />
     },
-    */
+    
   ];
 
   const nextSlide = () => {

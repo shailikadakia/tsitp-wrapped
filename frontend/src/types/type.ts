@@ -18,7 +18,8 @@ export type TsitpScoresResponse = {
   shipScores: ShipScores;                             
   soundtrackOverlap: SoundtrackOverlap;
   artistOverlap: ArtistOverlap;
-  characterAudioFeatures: CharacterAudioFeatures | null;
+  characterAudioFeatures: AudioFeatures | null;
+  summerMood: AudioFeatures | null
 };
 
 export interface Track {
@@ -53,10 +54,8 @@ export interface UserStats {
   teamJeremiahScore: number;  
   soundtrackOverlap: SoundtrackOverlap;
   artistOverlap: ArtistOverlap;
-  characterAudioFeatures: CharacterAudioFeatures | null;
-  avgValence: Number,
-  avgDanceability: Number,
-  avgEnergy: Number,
+  characterAudioFeatures: AudioFeatures | null;
+  summerMood: AudioFeatures | null;
 }
 
 export interface TSITPWrappedProps {
@@ -78,11 +77,12 @@ export type ArtistOverlap = {
   overlapArtists: string[];
 };
 
-export type CharacterAudioFeatures = {
+export type AudioFeatures = {
   playlistId: number;
   playlistName: string;
   count: number;
   avgDanceability: number | null;
   avgEnergy: number | null;
   avgValence: number | null;
+  avgAcoustics: number | null
 };

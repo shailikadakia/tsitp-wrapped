@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Sun, Moon } from 'lucide-react';
@@ -11,7 +10,7 @@ export function ShipSlide({ userStats }: { userStats: UserStats }) {
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-1">Based on your music vibes...</h2>
         <p className="text-sm text-gray-500">
-          (Matched against the official Belly × Conrad and Belly × Jeremiah playlists)
+          Matched against the all songs played during each ship's scenes
         </p>
       </div>
 
@@ -47,7 +46,7 @@ export function ShipSlide({ userStats }: { userStats: UserStats }) {
 
       <div className="bg-white/50 rounded-lg p-4 text-center">
         <p className="text-sm text-gray-600">
-          You're <strong>{userStats.teamConradScore > userStats.teamJeremiahScore ? "Team Conrad" : "Team Jeremiah"}</strong> based on your summer playlist!
+          You're <strong>{userStats.teamConradScore > userStats.teamJeremiahScore ? "Team Connie baby" : "Team Jere Bear"}</strong> based on your summer playlist!
         </p>
       </div>
     </div>
