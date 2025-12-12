@@ -1,15 +1,18 @@
 import express from "express";
-import { scoreUserForCharacters, scoreUserForShips } from "../services/scoringService";
+import { scoreUserForCharacters, scoreUserForShips, countSoundtrackOverlap } from "../services/scoringService";
+import { json } from "stream/consumers";
 
 const scoreRouter = express.Router();
 
-
+https://open.spotify.com/track/4OAuvHryIVv4kMDNSLuPt6?si=42c04d6b16ad4a3b
 scoreRouter.post("/get-score", async (req, res) => {
   try {
     const { spotifyTrackIds } = req.body;
+    console.log(spotifyTrackIds)
 
     const characterScores = await scoreUserForCharacters(spotifyTrackIds);
     const shipScores = await scoreUserForShips(spotifyTrackIds);
+    const overlap = await countSoundtrackOverlap(spotifyTrackIds)
 
     console.log("=== CHARACTER SCORES ===");
     console.log(JSON.stringify(characterScores, null, 2));
@@ -17,11 +20,14 @@ scoreRouter.post("/get-score", async (req, res) => {
     console.log("=== SHIP SCORES ===");
     console.log(JSON.stringify(shipScores, null, 2));
 
+    console.log(JSON.stringify(overlap))
+
     return res.json({
       characterMatch: characterScores.bestMatch,
       characterScores: characterScores.allScores,
       shipMatch: shipScores.shipMatch,
       shipScores: shipScores.scores,
+      overlap: overlap  
     });
   } catch (err) {
     console.error("Error computing scores:", err);

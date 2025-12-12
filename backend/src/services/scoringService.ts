@@ -3,7 +3,6 @@ import type { AudioFeatures as AudioFeaturesModel } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-
 function loudnessToUnit(loudnessDb: number): number {
   const min = -60;
   const max = 0;
@@ -264,6 +263,8 @@ const SHIP_PLAYLISTS = {
   TEAM_JEREMIAH: "3yefpSTulj1IpNHvVG8SNy",
 };
 
+const SHOW_SOUNDTRACK = "7kQgEsY7hsBRxO5dEcBaEG"
+
 export async function scoreUserForCharacters(
   userSpotifyTrackIds: string[]
 ) {
@@ -307,5 +308,35 @@ export async function scoreUserForShips(
       teamConrad,
       teamJeremiah,
     },
+  };
+}
+
+export async function countSoundtrackOverlap(spotifyTrackIds: string[]) {
+  if (!spotifyTrackIds || spotifyTrackIds.length === 0) {
+    return { overlapCount: 0, overlapTracks: [] };
+  }
+
+  const overlappingTracks = await prisma.track.findMany({
+    where: {
+      spotifyTrackId: { in: spotifyTrackIds },
+
+      playlistEntries: {
+        some: {
+          playlist: {
+            spotifyPlaylistId: SHOW_SOUNDTRACK,
+          },
+        },
+      },
+    },
+    select: {
+      spotifyTrackId: true,
+      name: true,
+      artist: true,
+    },
+  });
+
+  return {
+    overlapCount: overlappingTracks.length,
+    overlapTracks: overlappingTracks, 
   };
 }
