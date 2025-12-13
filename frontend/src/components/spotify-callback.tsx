@@ -42,7 +42,7 @@ export function SpotifyCallback({ onSuccess, onError }: SpotifyCallbackProps) {
         sessionStorage.setItem('tsitp_top_tracks', JSON.stringify(topTracksData));
 
         setStatus('Analyzing your TSITP vibes...');
-        const res = await fetch('http://localhost:4000/api/score/get-score', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}api/score/get-score`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ spotifyTrackIds }),
