@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
-import { Badge } from './components/ui/badge';
-import { Progress } from './components/ui/progress';
+
 import { Heart, Music, Waves, Sun, Sunset } from 'lucide-react';
 import { TSITPWrapped } from './components/tsitp-wrapped';
-import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { SpotifyAuth } from './components/spotify-auth';
 import { SpotifyCallback } from './components/spotify-callback';
 import { LoadingScreen } from './components/loading-screen';
+import { Toaster, toast } from 'sonner';
 import { isAuthenticated, getSummerData, getUserProfile,  logout } from './lib/spotify-api';
 
 type AppState = 'landing' | 'auth' | 'callback' | 'loading' | 'wrapped';
@@ -28,31 +27,24 @@ export default function App() {
   }, []);
 
   const handleGetWrapped = async (demoMode: boolean = false) => {
-    if (demoMode) {
-      // Use demo mode with mock data - skip straight to wrapped
-      setUserData(null); // Ensure we use mock data
-      setAppState('wrapped');
-    } else {
-      // Check if authenticated
-      if (isAuthenticated()) {
-        // Fetch real Spotify data
-        setAppState('loading');
-        try {
-         // const tracks = await getSummerData();
-         // setUserData(tracks);
-          setAppState('wrapped');
-          const user = await getUserProfile();
-          console.log(user)
-        } catch (error) {
-          console.error('Error fetching Spotify data:', error);
-          alert('Failed to fetch your Spotify data. Please try again or use demo mode.');
-          setAppState('landing');
-        }
-      } else {
-        // Show auth screen
-        setAppState('auth');
+    // Check if authenticated
+    if (isAuthenticated()) {
+      // Fetch real Spotify data
+      setAppState('loading');
+      try {
+        setAppState('wrapped');
+        const user = await getUserProfile();
+        console.log(user)
+      } catch (error) {
+        console.error('Error fetching Spotify data:', error);
+        alert('Failed to fetch your Spotify data. Please try again or use demo mode.');
+        setAppState('landing');
       }
+    } else {
+      // Show auth screen
+      setAppState('auth');
     }
+    
   };
 
   const handleAuthSuccess = () => {
@@ -79,21 +71,25 @@ export default function App() {
     setUserData(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    setAppState('landing');
-    setUserData(null);
+  const handleLogout = async () => {
+    setAppState('loading');
+    try {
+      await Promise.resolve(logout());
+      setUserData(null);
+      toast.success('Spotify account disconnected');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast.error('Failed to disconnect Spotify. Please try again.');
+    } finally {
+      setAppState('landing');
+    }
   };
 
   return (
     <div className="min-h-screen">
+      <Toaster position="top-center" richColors />
       {/* Background */}
       <div className="fixed inset-0 z-0">
-        <ImageWithFallback
-          src="https://images.unsplash.com/photo-1621622807857-ae68f7e707f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdW1tZXIlMjBiZWFjaCUyMG9jZWFuJTIwc3Vuc2V0fGVufDF8fHx8MTc1ODQ3NzUwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-          alt="Summer beach sunset"
-          className="w-full h-full object-cover opacity-20"
-        />
         <div className="absolute inset-0 bg-gradient-to-b from-sky-100/90 via-orange-200/40 to-pink-300/50"></div>
       </div>
 
@@ -187,31 +183,8 @@ export default function App() {
                   className="bg-gradient-to-r from-blue-500 via-purple-400 to-pink-400 hover:opacity-90 text-white px-8 py-3 text-lg shadow-lg"
                 >
                   <Music className="w-5 h-5 mr-2" />
-                  {isAuthenticated() ? 'Get My TSITP Wrapped' : 'Connect Spotify & Get Wrapped'}
+                  {isAuthenticated() ? 'Show me My TSITP Wrapped' : 'Connect to Spotify'}
                 </Button>
-                
-                <div className="flex items-center justify-center gap-4">
-                  <div className="h-px bg-gray-300 flex-1 max-w-[100px]"></div>
-                  <span className="text-sm text-gray-500">or skip Spotify</span>
-                  <div className="h-px bg-gray-300 flex-1 max-w-[100px]"></div>
-                </div>
-
-                <Button 
-                  onClick={() => {
-                    setUseDemo(true);
-                    handleGetWrapped(true);
-                  }}
-                  variant="outline"
-                  size="lg"
-                  className="border-2 border-purple-300 hover:bg-purple-50 text-purple-700 px-8 py-3 shadow-sm"
-                >
-                  View Demo with Sample Data
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center">
-                  Demo uses example music data to show how the experience works
-                </p>
-
                 {isAuthenticated() && (
                   <div className="pt-2">
                     <Button 

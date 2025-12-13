@@ -1,4 +1,4 @@
-import { ReccoBeatsAudioFeatures } from "../types/reccoBeats";
+import { ReccoBeatsAudioFeatures } from "../types/types";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 

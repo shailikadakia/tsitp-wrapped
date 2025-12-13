@@ -1,8 +1,20 @@
 import { PrismaClient, Playlist } from "@prisma/client";
 import type { AudioFeatures as AudioFeaturesModel } from "@prisma/client";
+import { ensureTracksSynced } from "./trackSyncService";
+import { PlaylistScore, BestMatch } from "../types/types";
+import 'dotenv/config';
+
 
 const prisma = new PrismaClient();
 
+const BELLY = process.env.BELLY!
+const JEREMIAH = process.env.JEREMIAH!
+const CONRAD = process.env.CONRAD!
+const TAYLOR = process.env.TAYLOR!
+const STEVEN= process.env.STEVEN!
+const SHOW = process.env.SHOW!
+const TEAM_CONRAD= process.env.TEAM_CONRAD!
+const TEAM_JEREMIAH = process.env.TEAM_JEREMIAH!
 
 function loudnessToUnit(loudnessDb: number): number {
   const min = -60;
@@ -184,8 +196,6 @@ export async function getPlaylistCentroidBySpotifyId(
 
   
 }
-import { ensureTracksSynced } from "./trackSyncService";
-
 
 export async function getUserCentroidFromSpotifyTrackIds(
   spotifyTrackIds: string[]
@@ -220,15 +230,6 @@ export async function getUserCentroidFromSpotifyTrackIds(
   };
 }
 
-
-export type PlaylistScore = {
-  playlistId: number;
-  spotifyPlaylistId: string;
-  name: string;
-  score: number;        
-  scorePercent: number; 
-};
-
 export async function scoreUserAgainstPlaylistBySpotifyId(
   spotifyPlaylistId: string,
   userSpotifyTrackIds: string[]   
@@ -251,31 +252,15 @@ export async function scoreUserAgainstPlaylistBySpotifyId(
   };
 }
 
-
-// src/services/scoringService.ts (continued)
-
-const CHARACTER_PLAYLISTS = {
-  BELLY: "41aa6enLM2wtRwSM5SM7Sh",
-  CONRAD: "7lj4H1NYnEOYbglHG2r33d",
-  JEREMIAH: "56UhqpBYxGxAYvUiaE8XG0",
-  STEVEN: "5zRsAtjfSao2FV11RAHMh3",
-  TAYLOR: "73QvP9Wp2fizzgUgPCoruT"
-};
-
-const SHIP_PLAYLISTS = {
-  TEAM_CONRAD: "7gIGb1GKF2yiQv9nfYKFgC",
-  TEAM_JEREMIAH: "3yefpSTulj1IpNHvVG8SNy",
-};
-
 export async function scoreUserForCharacters(
   userSpotifyTrackIds: string[]
 ) {
   const [belly, conrad, jeremiah, steven, taylor] = await Promise.all([
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.BELLY, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.CONRAD, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.JEREMIAH, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.STEVEN, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(CHARACTER_PLAYLISTS.TAYLOR, userSpotifyTrackIds)
+    scoreUserAgainstPlaylistBySpotifyId(BELLY, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(CONRAD, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(JEREMIAH, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(STEVEN, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(TAYLOR, userSpotifyTrackIds)
   ]);
 
   const all = [belly, conrad, jeremiah, steven, taylor];
@@ -297,8 +282,8 @@ export async function scoreUserForShips(
   userSpotifyTrackIds: string[]
 ) {
   const [teamConrad, teamJeremiah] = await Promise.all([
-    scoreUserAgainstPlaylistBySpotifyId(SHIP_PLAYLISTS.TEAM_CONRAD, userSpotifyTrackIds),
-    scoreUserAgainstPlaylistBySpotifyId(SHIP_PLAYLISTS.TEAM_JEREMIAH, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(TEAM_CONRAD, userSpotifyTrackIds),
+    scoreUserAgainstPlaylistBySpotifyId(TEAM_JEREMIAH, userSpotifyTrackIds),
   ]);
 
   const ship =
@@ -310,5 +295,244 @@ export async function scoreUserForShips(
       teamConrad,
       teamJeremiah,
     },
+  };
+}
+
+export async function countSoundtrackOverlap(spotifyTrackIds: string[]) {
+  if (!spotifyTrackIds || spotifyTrackIds.length === 0) {
+    return { overlapCount: 0, overlapTracks: [] };
+  }
+
+  const overlappingTracks = await prisma.track.findMany({
+    where: {
+      spotifyTrackId: { in: spotifyTrackIds },
+
+      playlistEntries: {
+        some: {
+          playlist: {
+            spotifyPlaylistId: SHOW,
+          },
+        },
+      },
+    },
+    select: {
+      spotifyTrackId: true,
+      name: true,
+      artist: true,
+    },
+  });
+
+  return {
+    overlapCount: overlappingTracks.length,
+    overlapTracks: overlappingTracks, 
+  };
+}
+
+export async function countArtistOverlap(spotifyTrackIds: string[]) {
+  if (!spotifyTrackIds || spotifyTrackIds.length === 0) {
+    return {
+      overlapCount: 0,
+      overlapArtists: [],
+    };
+  }
+
+  const showTracks = await prisma.track.findMany({
+    where: {
+      playlistEntries: {
+        some: {
+          playlist: {
+            spotifyPlaylistId: SHOW,
+          },
+        },
+      },
+    },
+    select: {
+      artist: true, 
+    },
+  });
+
+  const userTracks = await prisma.track.findMany({
+    where: {
+      spotifyTrackId: { in: spotifyTrackIds },
+    },
+    select: {
+      artist: true, 
+    },
+  });
+
+  const showArtistSet = new Set<string>();
+  for (const t of showTracks) {
+    for (const a of t.artist ?? []) {
+      if (a) showArtistSet.add(a);
+    }
+  }
+
+  const userArtistSet = new Set<string>();
+  for (const t of userTracks) {
+    for (const a of t.artist ?? []) {
+      if (a) userArtistSet.add(a);
+    }
+  }
+
+  const overlapArtists: string[] = [];
+  for (const a of userArtistSet) {
+    if (showArtistSet.has(a)) {
+      overlapArtists.push(a);
+    }
+  }
+
+  return {
+    overlapCount: overlapArtists.length,
+    overlapArtists,
+  };
+}
+
+
+export async function getAverageAudioFeaturesForBestMatch(bestMatch: BestMatch) {
+  const tracksWithFeatures = await prisma.track.findMany({
+    where: {
+      playlistEntries: {
+        some: {
+          playlistId: bestMatch.playlistId,
+        },
+      },
+      audioFeatures: {
+        isNot: null,
+      },
+    },
+    select: {
+      audioFeatures: {
+        select: {
+          danceability: true,
+          energy: true,
+          valence: true,
+          acousticness: true,
+        },
+      },
+    },
+  });
+
+  if (tracksWithFeatures.length === 0) {
+    return {
+      playlistId: bestMatch.playlistId,
+      playlistName: bestMatch.name,
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+      avgAcoustics: null
+    };
+  }
+
+  let sumDance = 0;
+  let sumEnergy = 0;
+  let sumValence = 0;
+  let count = 0;
+  let sumAcoustics = 0;
+
+  for (const t of tracksWithFeatures) {
+    const af = t.audioFeatures;
+    if (!af) continue;
+
+    if (af.danceability != null) {
+      sumDance += af.danceability;
+    }
+    if (af.energy != null) {
+      sumEnergy += af.energy;
+    }
+    if (af.valence != null) {
+      sumValence += af.valence;
+    }
+    if (af.acousticness != null) {
+      sumAcoustics += af.acousticness;
+    }
+    count++;
+  }
+
+  if (count === 0) {
+    return {
+      playlistId: bestMatch.playlistId,
+      playlistName: bestMatch.name,
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+      avgAcoustics: null
+    };
+  }
+
+  return {
+    playlistId: bestMatch.playlistId,
+    playlistName: bestMatch.name,
+    count,
+    avgDanceability: sumDance / count,
+    avgEnergy: sumEnergy / count,
+    avgValence: sumValence / count,
+    avgAcoustics: sumAcoustics / count
+  };
+}
+
+export async function getAverageAudioFeaturesForUser(spotifyTrackIds: string[]) {
+  if (!spotifyTrackIds || spotifyTrackIds.length === 0) {
+    return {
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+      avgAcoustics: null
+    };
+  }
+
+  const tracks = await prisma.track.findMany({
+    where: {
+      spotifyTrackId: { in: spotifyTrackIds },
+      audioFeatures: { isNot: null },
+    },
+    select: {
+      audioFeatures: {
+        select: {
+          danceability: true,
+          energy: true,
+          valence: true,
+          acousticness: true
+        },
+      },
+    },
+  });
+
+  if (tracks.length === 0) {
+    return {
+      count: 0,
+      avgDanceability: null,
+      avgEnergy: null,
+      avgValence: null,
+      avgAcoustics: null
+    };
+  }
+
+  let sumDance = 0;
+  let sumEnergy = 0;
+  let sumValence = 0;
+  let count = 0;
+  let sumAcoustics = 0
+
+  for (const t of tracks) {
+    const af = t.audioFeatures;
+    if (!af) continue;
+
+    if (af.danceability != null) sumDance += af.danceability;
+    if (af.energy != null) sumEnergy += af.energy;
+    if (af.valence != null) sumValence += af.valence;
+    if (af.acousticness != null) sumAcoustics += af.acousticness;
+
+    count++;
+  }
+
+  return {
+    count,
+    avgDanceability: sumDance / count,
+    avgEnergy: sumEnergy / count,
+    avgValence: sumValence / count,
+    avgAcoustics: sumAcoustics / count
   };
 }

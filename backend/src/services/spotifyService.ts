@@ -2,7 +2,7 @@ import {
   SpotifyPlaylistAPIResponse,
   SpotifyTrack,
   SpotifyPlaylist,
-} from "../types/spotify";
+} from "../types/types";
 import { getAppAccessToken } from "./spotifyClient";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -53,23 +53,51 @@ export async function getTracksByPlaylist(
   playlistId: string,
 ): Promise<SpotifyPlaylist> {
   try {
-    const response = await spotifyFetchWithRetry(
+    // 1) Get playlist info (name etc.)
+    const playlistResponse = await spotifyFetchWithRetry(
       `https://api.spotify.com/v1/playlists/${playlistId}`,
     );
+    const playlistJson = (await playlistResponse.json()) as SpotifyPlaylistAPIResponse;
 
-    const json = (await response.json()) as SpotifyPlaylistAPIResponse;
+    // 2) Paginate through ALL tracks
+    const limit = 100;
+    let offset = 0;
+    let allItems: any[] = [];
+    let total = 0;
 
-    const tracks: SpotifyTrack[] = json.tracks.items
-      .filter((item: any) => item.track != null)
-      .map((item: any) => ({
-        spotifyTrackId: item.track.id,
-        name: item.track.name ?? null,
-        artist: item.track.artists?.[0]?.name ?? null,
-      }));
+    while (true) {
+      const tracksResponse = await spotifyFetchWithRetry(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`,
+      );
+
+      const tracksJson = (await tracksResponse.json()) as any;
+
+      const items = tracksJson.items || [];
+      total = tracksJson.total ?? total;
+
+      const validItems = items.filter((item: any) => item.track && !item.is_local);
+      allItems = allItems.concat(validItems);
+
+      if (!tracksJson.next) {
+        break;
+      }
+
+      offset += limit;
+    }
+
+    console.log(
+      `Fetched ${allItems.length} playlist tracks out of total=${total}`,
+    );
+
+    const tracks: SpotifyTrack[] = allItems.map((item: any) => ({
+      spotifyTrackId: item.track.id,
+      name: item.track.name ?? null,
+      artist: item.track.artists?.[0]?.name ?? null,
+    }));
 
     return {
       playlistId,
-      name: json.name ?? null,
+      name: playlistJson.name ?? null,
       tracks,
     };
   } catch (err) {

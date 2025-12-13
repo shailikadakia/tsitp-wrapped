@@ -24,15 +24,11 @@ export async function ensureTracksSynced(spotifyTrackIds: string[]) {
 
   for (const spotifyTrackId of missingIds) {
     try {
-      // 1) Get track name + artist from Spotify
       const trackInfo = await getTrackNameAuthor(spotifyTrackId);
-      // 2) Get audio features from ReccoBeats
       const recco = await getTrackAudioFeaturesreccoResponse(spotifyTrackId);
-      // 3) Store Track + AudioFeatures using your existing helper
       await getOrFetchAudioFeaturesForTrackPerPlaylist(recco, spotifyTrackId, trackInfo);
     } catch (err) {
       console.error(`Failed to sync spotifyTrackId=${spotifyTrackId}`, err);
-      // You can decide whether to rethrow or just continue
     }
   }
 }
