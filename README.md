@@ -336,7 +336,18 @@ Environment variables required:
 - OAuth redirect URI
 
 ## Results of TSITP Wrapped from different Spotify Users
+
 *My Results*
+![User 1 - slide 1](assets/User1_1.png)
+![User 1 - slide 2](assets/User1_2.png)
+![User 1 - slide 3](assets/User1_3.png)
+![User 1 - slide 4](assets/User1_4.png)
 
-![alt text](https://file%2B.vscode-resource.vscode-cdn.net/Users/shailikadakia/Downloads/tsitp-wrapped/assets/User1_1.png?version%3D1765733478759)
 
+### Additional user captures are also available:
+
+*User 2*
+![User 2 - slide 1](assets/User2_1.png)
+![User 2 - slide 2](assets/User2_2.png)
+![User 2 - slide 3](assets/User2_3.png)
+![User 2 - slide 4](assets/User2_4.png)
