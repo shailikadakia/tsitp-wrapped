@@ -334,3 +334,9 @@ npm run dev
 Environment variables required:
 - Spotify client ID
 - OAuth redirect URI
+
+## Results of TSITP Wrapped from different Spotify Users
+*My Results*
+
+![alt text](https://file%2B.vscode-resource.vscode-cdn.net/Users/shailikadakia/Downloads/tsitp-wrapped/assets/User1_1.png?version%3D1765733478759)
+
