@@ -351,3 +351,9 @@ Environment variables required:
 ![User 2 - slide 2](assets/User2_2.png)
 ![User 2 - slide 3](assets/User2_3.png)
 ![User 2 - slide 4](assets/User2_4.png)
+
+*User 3*
+![User 3 - slide 1](assets/User3_1.png)
+![User 3 - slide 2](assets/User3_2.png)
+![User 3 - slide 3](assets/User3_3.png)
+![User 3 - slide 4](assets/User3_4.png)
